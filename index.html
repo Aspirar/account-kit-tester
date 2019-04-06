@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Account Kit Tester</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+      @import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro');
+
+      *,
+      *:before,
+      *:after {
+        box-sizing: border-box;
+      }
+
+      html, body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        color: rgba(0, 0, 0, .8);
+        background-color: #fafafa;
+      }
+
+      body,
+      input {
+        font: 400 24px/36px 'Source Sans Pro', sans-serif;
+      }
+
+      h1 {
+        font-weight: 400;
+        font-size: 48px;
+        margin: 72px 24px 48px;
+        color: #333;
+      }
+
+      label {
+        display: block;
+        font-size: 16px;
+        line-height: 1.5;
+        text-transform: uppercase;
+        color: rgb(38, 143, 185);
+        margin-top: 24px;
+      }
+      label:first-child {
+        margin-top: 0;
+      }
+
+      input {
+        display: block;
+        outline: 0;
+        border: 0;
+        border-left: 1px solid rgba(0, 0, 0, .1);
+        border-radius: 6px;
+        padding-left: 12px;
+        margin-top: 6px;
+        width: 100%;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .card {
+        background-color: white;
+        margin-bottom: 36px;
+        padding: 24px;
+        border-radius: 6px;
+        border-left: 4px solid rgb(38, 143, 185);
+        box-shadow: 0 20px 30px rgba(0, 0, 0, .03);
+        overflow-wrap: break-word;
+      }
+
+      .button {
+        display: inline-block;
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-top: 12px;
+        background-color: rgb(38, 143, 185);
+        color: rgba(255, 255, 255, .8);
+        box-shadow: 0 3px 0 rgb(25, 96, 124);
+        padding: 0 12px;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 100ms ease-out;
+      }
+      .button:active {
+        box-shadow: none;
+        transform: translateY(3px);
+      }
+
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <section class="container">
+      <h1>Account Kit Tester</h1>
+
+      <section class="access-token-wrap hidden card">
+        <label>Access Token</label>
+        <div class="access-token">aaa</div>
+      </section>
+
+      <section class="auth-code-wrap hidden card">
+        <label>Authorization Code</label>
+        <div class="code"></div>
+
+        <label>
+          Account Kit Secret
+          <input type="text" class="client-secret" placeholder="Your account kit client secret">
+        </label>
+
+        <a class="get-access-token-button button">Get Access Token</a>
+      </section>
+
+      <section class="card">
+        <form
+          method="GET" action="https://www.accountkit.com/v1.0/basic/dialog/sms_login/"
+          class="login-form"
+        >
+          <label>
+            App ID
+            <input type="text" name="app_id" class="app-id" placeholder="Your app ID">
+          </label>
+
+          <label>
+            Redirect URL
+            <input type="text" name="redirect" class="redirect-url">
+          </label>
+          
+          <input type="hidden" name="state" class="csrf-token">
+          <input type="hidden" name="fbAppEventsEnabled" value=true>
+          <input type="hidden" name="debug" value=true>
+
+          <a class="button login-button">Login</a>
+        </form>
+      </section>
+    </section>
+
+    <script>
+      const queryString = window.location.search;
+      const searchParams = new URLSearchParams(queryString);
+      const code = searchParams.get('code');
+      const csrfToken = searchParams.get('state');
+      
+      const sections = {
+        authCodeWrap: document.querySelector('.auth-code-wrap'),
+        code: document.querySelector('.code'),
+        csrf: document.querySelector('.csrf-token'),
+        clientSecret: document.querySelector('.client-secret'),
+        appId: document.querySelector('.app-id'),
+        accessToken: document.querySelector('.access-token'),
+        redirectUrl: document.querySelector('.redirect-url'),
+        accessTokenWrap: document.querySelector('.access-token-wrap'),
+      };
+
+      sections.redirectUrl.value = `${window.location.origin}/`;
+
+      if (code) {
+        sections.code.innerHTML = code;
+        sections.authCodeWrap.classList.remove('hidden');
+        
+        const csrfTokenArr = csrfToken.split('___');
+        const appId = decodeURIComponent(csrfTokenArr[0]);
+        const redirectUrl = decodeURIComponent(csrfTokenArr[1]);
+        sections.appId.value = appId;
+        sections.redirectUrl.value = redirectUrl;
+      }
+
+      document.querySelector('.get-access-token-button').addEventListener('click', () => {
+        const accessToken = `AA|${sections.appId.value}|${sections.clientSecret.value}`;
+        const baseUrl = 'https://graph.accountkit.com/v1.3/access_token?grant_type=authorization_code&';
+        const params = `code=${code}&access_token=${accessToken}`;
+        const url = `${baseUrl}${params}`;
+        
+        fetch(url)
+          .then((res) => {
+            if (res.status !== 200) throw new Error('Error in fetch');
+            return res.json();
+          })
+          .then((data) => {
+            sections.accessToken.innerHTML = data.access_token;
+            sections.accessTokenWrap.classList.remove('hidden');
+          })
+          .catch((err) => {
+            window.alert('An error occurred while fetching access token');
+          });
+      });
+
+      document.querySelector('.login-button').addEventListener('click', (e) => {
+        e.preventDefault();
+        document.querySelector('.login-form').submit();
+      });
+
+      sections.appId.addEventListener('input', setState);
+      sections.redirectUrl.addEventListener('input', setState);
+
+      function setState() {
+        const redirectUrl = sections.redirectUrl.value;
+        const appId = sections.appId.value;
+        const state = `${encodeURIComponent(appId)}___${encodeURIComponent(redirectUrl)}`;
+        sections.csrf.value = state;
+      }
+    </script>
+  </body>
+</html>
