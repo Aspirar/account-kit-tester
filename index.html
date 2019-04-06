@@ -162,7 +162,7 @@
         accessTokenWrap: document.querySelector('.access-token-wrap'),
       };
 
-      sections.redirectUrl.value = `${window.location.origin}/`;
+      sections.redirectUrl.value = `${window.location.origin}${window.location.pathname}`;
 
       if (code) {
         sections.code.innerHTML = code;
