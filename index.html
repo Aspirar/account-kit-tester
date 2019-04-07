@@ -94,6 +94,16 @@
         transform: translateY(3px);
       }
 
+      .notice {
+        font-size: 16px;
+        margin-top: 18px;
+        background-color: rgb(238, 240, 148);
+        color: rgb(104, 105, 45);
+        border-radius: 6px;
+        padding: 6px 12px;
+        line-height: 1.5;
+      }
+
       .hidden {
         display: none;
       }
@@ -119,6 +129,14 @@
         </label>
 
         <a class="get-access-token-button button">Get Access Token</a>
+
+        <div class="notice">
+          The authorization code is sent to the server which is then exchanged for the access token,
+          so this call should be made by the server. However, for a client may receive an access
+          token directly which can be sent to the server, which can be obtained here. Client secret
+          should not be stored on the client. This app is meant for testing purposes only so that
+          you can receive an access token to test your API.
+        </div>
       </section>
 
       <section class="card">
@@ -141,6 +159,10 @@
           <input type="hidden" name="debug" value=true>
 
           <a class="button login-button">Login</a>
+
+          <div class="notice">
+            Only the phone number verification flow is supported currently.
+          </div>
         </form>
       </section>
     </section>
